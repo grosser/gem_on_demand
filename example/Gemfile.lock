@@ -1,0 +1,12 @@
+GEM
+  remote: http://localhost:4567/grosser/
+  specs:
+    bump (0.5.0)
+    parallel (0.9.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bump
+  parallel

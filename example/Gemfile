@@ -1,0 +1,4 @@
+source "http://localhost:4567/grosser"
+
+gem "parallel"
+gem "bump"
