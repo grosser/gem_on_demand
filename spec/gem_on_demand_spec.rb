@@ -40,5 +40,10 @@ describe GemOnDemand do
         dependencies.last.should include config[:private][:dependencies]
       end
     end
+
+    it "lists nothing when gems are not found" do
+      dependencies = GemOnDemand.dependencies("grosser", ["missing"])
+      dependencies.should == []
+    end
   end
 end

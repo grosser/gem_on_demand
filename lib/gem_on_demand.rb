@@ -3,6 +3,7 @@ require 'tmpdir'
 module GemOnDemand
   CACHE = "cache"
   CACHE_DURATION = 30 # seconds
+  ProjectNotFound = Class.new(Exception)
 
   class << self
     def build_gem(user, project, version)
@@ -17,20 +18,24 @@ module GemOnDemand
 
     def dependencies(user, gems)
       gems.map do |project|
-        inside_of_project(user, project) do
-          versions = sh("git tag").split($/).grep(/^v\d+\.\d\.\d$/)
-          versions.map do |version|
-            dependencies = cache "dependencies-#{version}" do
-              checkout_version(version)
-              sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'})
+        begin
+          inside_of_project(user, project) do
+            versions = sh("git tag").split($/).grep(/^v\d+\.\d\.\d$/)
+            versions.map do |version|
+              dependencies = cache "dependencies-#{version}" do
+                checkout_version(version)
+                sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'})
+              end
+              {
+                :name => project,
+                :number => version[1..-1],
+                :platform => "ruby",
+                :dependencies => Marshal.load(dependencies)
+              }
             end
-            {
-              :name => project,
-              :number => version[1..-1],
-              :platform => "ruby",
-              :dependencies => Marshal.load(dependencies)
-            }
           end
+        rescue ProjectNotFound
+          []
         end
       end.flatten
     end
@@ -49,11 +54,16 @@ module GemOnDemand
       end
     end
 
-    def sh(command)
+    def sh(command, options = { })
       puts command
       result = `#{command}`
-      raise "Command failed: #{result}" unless $?.success?
-      result
+      if $?.success?
+        result
+      elsif options[:fail] == :allow
+        false
+      else
+        raise "Command failed: #{result}"
+      end
     end
 
     def inside_of_project(user, project, &block)
@@ -75,7 +85,7 @@ module GemOnDemand
           refreshed!(project)
         end
       else
-        sh "git clone git@github.com:#{user}/#{project}.git"
+        raise ProjectNotFound unless sh "git clone git@github.com:#{user}/#{project}.git", :fail => :allow
         refreshed!(project)
       end
     end
