@@ -25,15 +25,16 @@ module GemOnDemand
             versions.map do |version|
               dependencies = cache "dependencies-#{version}" do
                 checkout_version(version)
-                sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'})
+                sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'}, :fail => :allow)
               end
+              next unless dependencies # gemspec error
               {
                 :name => project,
                 :number => version.sub(/^v/, ""),
                 :platform => "ruby",
                 :dependencies => Marshal.load(dependencies)
               }
-            end
+            end.compact
           end
         rescue ProjectNotFound
           []

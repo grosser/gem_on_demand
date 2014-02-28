@@ -45,5 +45,13 @@ describe GemOnDemand do
       dependencies = GemOnDemand.dependencies("grosser", ["missing"])
       dependencies.should == []
     end
+
+    it "does not list broken gem versions" do
+      dependencies = GemOnDemand.dependencies("zendesk", ["kasket"])
+      dependencies.size.should > 10
+      versions = dependencies.map { |d| d[:number] }
+      versions.should include "3.1.0"
+      versions.should_not include "v0.9.0" # requires activerecord from gemspec
+    end
   end
 end
