@@ -3,10 +3,12 @@ require 'gem_on_demand'
 
 module GemOnDemand
   class Server < Sinatra::Base
+    set :lock, true # multi threading is not supported when doing chdir foo
+
     get '/:username/api/v1/dependencies' do
       user = params[:username]
-      if params[:gems]
-        dependencies = GemOnDemand.dependencies(user, params[:gems].split(","))
+      if gems = params[:gems]
+        dependencies = GemOnDemand.dependencies(user, gems.split(","))
         if params[:debug]
           dependencies.inspect
         else
