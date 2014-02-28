@@ -4,7 +4,7 @@ module GemOnDemand
   CACHE = "cache"
   CACHE_DURATION = 30 # seconds
   ProjectNotFound = Class.new(Exception)
-  VERSION_REX = /^v?\d+\.\d\.\d/ # with or without v and and pre-release
+  VERSION_REX = /^v?\d+\.\d\.\d(\.\w+)?$/ # with or without v and pre-release (cannot do others or we get: 'Malformed version number string 1.0.0-rails3' from bundler)
   HEAVY_FORKED = ["rails"]
   MAX_VERSIONS = 50 # some projects just have a million versions ...
 
@@ -46,15 +46,23 @@ module GemOnDemand
 
     private
 
-    def cache(file)
+    def cache(file, value = nil, &block)
       ensure_cache
       file = "#{CACHE}/#{file}"
-      if File.exist?(file)
-        Marshal.load(File.read(file))
+      if block
+        if File.exist?(file)
+          Marshal.load(File.read(file))
+        else
+          result = yield
+          File.write(file, Marshal.dump(result))
+          result
+        end
       else
-        result = yield
-        File.write(file, Marshal.dump(result))
-        result
+        if value.nil?
+          Marshal.load(File.read(file)) if File.exist?(file)
+        else
+          File.write(file, Marshal.dump(value))
+        end
       end
     end
 
@@ -104,15 +112,11 @@ module GemOnDemand
     end
 
     def refreshed!(project)
-      File.write(updated(project), Time.now.to_i)
+      Dir.chdir(project) { cache("updated_at", Time.now.to_i) }
     end
 
     def refresh?(project)
-      File.read(updated(project)).to_i < Time.now.to_i - CACHE_DURATION
-    end
-
-    def updated(project)
-      "#{project}.updated_at"
+      Dir.chdir(project) { cache("updated_at").to_i } < Time.now.to_i - CACHE_DURATION
     end
 
     def checkout_version(version)
