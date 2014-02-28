@@ -31,9 +31,8 @@ bundle
 
 TODO
 ====
- - tests
+ - Ctrl+c stops subcommand but not the entire request
  - travis
- - caching of versions and dependencies (atm just showing last 3 versions because it would take forever)
 
 Author
 ======

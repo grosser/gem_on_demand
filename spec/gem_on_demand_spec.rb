@@ -53,5 +53,17 @@ describe GemOnDemand do
       versions.should include "3.1.0"
       versions.should_not include "v0.9.0" # requires activerecord from gemspec
     end
+
+    it "remembers unfound gems" do
+      dependencies = GemOnDemand.dependencies("grosser", ["does_not_exist"])
+      dependencies.should == []
+      t = Benchmark.realtime { GemOnDemand.dependencies("grosser", ["does_not_exist"]) }
+      t.should < 0.001
+    end
+
+    it "does not know rails, because it's a giant repo with tons of forks" do
+      dependencies = GemOnDemand.dependencies("grosser", ["rails"])
+      dependencies.should == []
+    end
   end
 end

@@ -5,6 +5,8 @@ module GemOnDemand
   CACHE_DURATION = 30 # seconds
   ProjectNotFound = Class.new(Exception)
   VERSION_REX = /^v?\d+\.\d\.\d/ # with or without v and and pre-release
+  HEAVY_FORKED = ["rails"]
+  MAX_VERSIONS = 50 # some projects just have a million versions ...
 
   class << self
     def build_gem(user, project, version)
@@ -18,11 +20,11 @@ module GemOnDemand
     end
 
     def dependencies(user, gems)
-      gems.map do |project|
+      (gems - HEAVY_FORKED).map do |project|
         begin
           inside_of_project(user, project) do
             versions = sh("git tag").split($/).grep(VERSION_REX)
-            versions.map do |version|
+            versions.last(MAX_VERSIONS).map do |version|
               dependencies = cache "dependencies-#{version}" do
                 checkout_version(version)
                 sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'}, :fail => :allow)
@@ -82,13 +84,22 @@ module GemOnDemand
 
     def clone_or_refresh_project(user, project)
       if File.directory?(project)
-        if refresh?(project)
+        if File.exist?("#{project}/not-found")
+          raise ProjectNotFound
+        elsif refresh?(project)
           Dir.chdir(project) { sh "git fetch origin" }
           refreshed!(project)
         end
       else
-        raise ProjectNotFound unless sh "git clone git@github.com:#{user}/#{project}.git", :fail => :allow
-        refreshed!(project)
+        success = sh "git clone git@github.com:#{user}/#{project}.git", :fail => :allow
+        if success
+          refreshed!(project)
+        else
+          # mark it as not found
+          Dir.mkdir(project)
+          File.write("#{project}/not-found", "")
+          raise ProjectNotFound
+        end
       end
     end
 
