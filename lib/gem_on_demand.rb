@@ -2,6 +2,37 @@ require 'tmpdir'
 
 module GemOnDemand
   class << self
+    def build_gem(user, project, version)
+      clone_project(user, project) do
+        checkout_version("v#{version}")
+        gemspec = "#{project}.gemspec"
+        remove_signing(gemspec)
+        sh("gem build #{gemspec}")
+        File.read("#{project}-#{version}.gem")
+      end
+    end
+
+    def dependencies(user, gems)
+      gems.map do |project|
+        clone_project(user, project) do
+          versions = sh("git tag").split($/).grep(/^v\d+\.\d\.\d$/)
+          puts "VERSIONS #{versions}"
+          versions.last(2).map do |version|
+            checkout_version(version)
+            dependencies = sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'})
+            {
+              :name => project,
+              :number => version[1..-1],
+              :platform => "ruby",
+              :dependencies => Marshal.load(dependencies)
+            }
+          end
+        end
+      end.flatten
+    end
+
+    private
+
     def sh(command)
       puts command
       result = `#{command}`
@@ -20,25 +51,6 @@ module GemOnDemand
 
     def checkout_version(version)
       sh("git checkout #{version}")
-    end
-
-    def dependencies(user, gems)
-      gems.map do |project|
-        clone_project(user, project) do
-          versions = sh("git tag").split($/).grep(/^v\d+\.\d\.\d$/)
-          puts "VERSIONS #{versions}"
-          versions.last(2).map do |version|
-            checkout_version(version)
-            dependencies = sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement]})'})
-            {
-              :name => project,
-              :number => version[1..-1],
-              :platform => "ruby",
-              :dependencies => Marshal.load(dependencies)
-            }
-          end
-        end
-      end.flatten
     end
 
     # ERROR:  While executing gem ... (Gem::Security::Exception)

@@ -21,13 +21,7 @@ module GemOnDemand
       user = params[:username]
       project = params[:project]
       version = params[:version]
-      GemOnDemand.clone_project(user, project) do
-        GemOnDemand.checkout_version("v#{version}")
-        gemspec = "#{project}.gemspec"
-        GemOnDemand.remove_signing(gemspec)
-        sh("gem build #{gemspec}")
-        File.read("#{project}-#{version}.gem")
-      end
+      GemOnDemand.build_gem(user, project, version)
     end
   end
 end
