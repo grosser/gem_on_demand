@@ -22,7 +22,7 @@ describe GemOnDemand do
         :platform=>"ruby",
         :dependencies=>[["parallel", ">= 0"]]
       }
-      dependencies.size.should > 50
+      dependencies.size.should >= 50
     end
   end
 end

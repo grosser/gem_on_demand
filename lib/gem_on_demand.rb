@@ -19,10 +19,11 @@ module GemOnDemand
       gems.map do |project|
         inside_of_project(user, project) do
           versions = sh("git tag").split($/).grep(/^v\d+\.\d\.\d$/)
-          puts "VERSIONS #{versions}"
-          versions.last(2).map do |version|
-            checkout_version(version)
-            dependencies = sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'})
+          versions.map do |version|
+            dependencies = cache "dependencies-#{version}" do
+              checkout_version(version)
+              sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'})
+            end
             {
               :name => project,
               :number => version[1..-1],
@@ -36,6 +37,19 @@ module GemOnDemand
 
     private
 
+    def cache(file)
+      ensure_cache
+      file = "#{CACHE}/#{file}"
+      if File.exist?(file)
+        puts "FILE #{file} -- #{Dir.pwd}"
+        Marshal.load(File.read(file))
+      else
+        result = yield
+        File.write(file, Marshal.dump(result))
+        result
+      end
+    end
+
     def sh(command)
       puts command
       result = `#{command}`
@@ -44,11 +58,15 @@ module GemOnDemand
     end
 
     def inside_of_project(user, project, &block)
-      Dir.mkdir(CACHE) unless File.directory?(CACHE)
+      ensure_cache
       Dir.chdir(CACHE) do
         clone_or_refresh_project(user, project)
         Dir.chdir(project, &block)
       end
+    end
+
+    def ensure_cache
+      Dir.mkdir(CACHE) unless File.directory?(CACHE)
     end
 
     def clone_or_refresh_project(user, project)
