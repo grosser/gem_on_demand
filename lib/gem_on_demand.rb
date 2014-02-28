@@ -41,7 +41,6 @@ module GemOnDemand
       ensure_cache
       file = "#{CACHE}/#{file}"
       if File.exist?(file)
-        puts "FILE #{file} -- #{Dir.pwd}"
         Marshal.load(File.read(file))
       else
         result = yield
@@ -76,7 +75,7 @@ module GemOnDemand
           refreshed!(project)
         end
       else
-        sh "git clone https://github.com/#{user}/#{project}.git"
+        sh "git clone git@github.com:#{user}/#{project}.git"
         refreshed!(project)
       end
     end

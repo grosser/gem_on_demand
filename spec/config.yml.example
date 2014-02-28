@@ -1,0 +1,7 @@
+:private:
+  :user: <user>
+  :project: <project>
+  :dependencies:
+    :name: <project>
+    :platform: ruby
+    :dependencies: []
