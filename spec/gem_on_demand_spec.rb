@@ -21,6 +21,12 @@ describe GemOnDemand do
       gem = GemOnDemand.build_gem("grosser", "parallel", "0.8.4")
       gem.size.should >= 2000
     end
+
+    it "is fast when cached" do
+      GemOnDemand.build_gem("grosser", "parallel", "0.9.2")
+      t = Benchmark.realtime { GemOnDemand.build_gem("grosser", "parallel", "0.9.2") }
+      t.should < 0.01
+    end
   end
 
   describe ".dependencies" do

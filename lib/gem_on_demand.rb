@@ -2,20 +2,22 @@ require 'tmpdir'
 
 module GemOnDemand
   CACHE = "cache"
-  CACHE_DURATION = 30 # seconds
+  CACHE_DURATION = 15 * 60 # for project tags
   ProjectNotFound = Class.new(Exception)
-  VERSION_REX = /^v?\d+\.\d\.\d(\.\w+)?$/ # with or without v and pre-release (cannot do others or we get: 'Malformed version number string 1.0.0-rails3' from bundler)
-  HEAVY_FORKED = ["rails"]
+  VERSION_REX = /^v?\d+\.\d+\.\d+(\.\w+)?$/ # with or without v and pre-release (cannot do others or we get: 'Malformed version number string 1.0.0-rails3' from bundler)
+  HEAVY_FORKED = ["rails", "mysql", "mysql2"]
   MAX_VERSIONS = 50 # some projects just have a million versions ...
 
   class << self
     def build_gem(user, project, version)
       inside_of_project(user, project) do
-        checkout_version("v#{version}")
-        gemspec = "#{project}.gemspec"
-        remove_signing(gemspec)
-        sh("gem build #{gemspec}")
-        File.read("#{project}-#{version}.gem")
+        cache("gem-#{version}") do
+          checkout_version("v#{version}")
+          gemspec = "#{project}.gemspec"
+          remove_signing(gemspec)
+          sh("gem build #{gemspec}")
+          File.read("#{project}-#{version}.gem")
+        end
       end
     end
 

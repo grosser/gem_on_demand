@@ -32,7 +32,10 @@ bundle
 TODO
 ====
  - Ctrl+c stops subcommand but not the entire request
+ - do not do the git tag + version dance when all tags where cached last time around ...
  - travis
+ - check how rubygems handles pre-release (x.y.z.PRE)
+ - fake x.y.z-xxx as x.y.z.xxx -> can use these weird tags
 
 Author
 ======
