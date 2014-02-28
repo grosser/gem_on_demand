@@ -1,0 +1,14 @@
+PATH
+  remote: .
+  specs:
+    noooo (1.0.0)
+
+GEM
+  remote: http://localhost:4567/user/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  noooo!
