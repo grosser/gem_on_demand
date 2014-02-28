@@ -4,6 +4,7 @@ module GemOnDemand
   CACHE = "cache"
   CACHE_DURATION = 30 # seconds
   ProjectNotFound = Class.new(Exception)
+  VERSION_REX = /^v?\d+\.\d\.\d/ # with or without v and and pre-release
 
   class << self
     def build_gem(user, project, version)
@@ -20,7 +21,7 @@ module GemOnDemand
       gems.map do |project|
         begin
           inside_of_project(user, project) do
-            versions = sh("git tag").split($/).grep(/^v\d+\.\d\.\d$/)
+            versions = sh("git tag").split($/).grep(VERSION_REX)
             versions.map do |version|
               dependencies = cache "dependencies-#{version}" do
                 checkout_version(version)
@@ -28,7 +29,7 @@ module GemOnDemand
               end
               {
                 :name => project,
-                :number => version[1..-1],
+                :number => version.sub(/^v/, ""),
                 :platform => "ruby",
                 :dependencies => Marshal.load(dependencies)
               }
