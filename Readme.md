@@ -13,7 +13,7 @@ gem-on-demand --server
 
 Usage
 =====
-Specify a source with username in your gemfile
+Specify source with `/{user} in your Gemfile
 
 ```Ruby
 # source "https://rubygems.org" # need normal gems too ?
@@ -23,7 +23,7 @@ gem "parallel"
 gem "bump"
 ```
 
-ALWAYS have a vendor/cache directory and add it to git so gem can be installed on a remote server.
+Always have a **`vendor/cache`** directory and add it to git so gem can be installed on a remote server.
 ```Bash
 mkdir -p vendor/cache
 bundle
