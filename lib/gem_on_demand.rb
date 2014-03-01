@@ -23,30 +23,38 @@ module GemOnDemand
 
     def dependencies(user, gems)
       (gems - HEAVY_FORKED).map do |project|
-        begin
-          inside_of_project(user, project) do
-            versions = sh("git tag").split($/).grep(VERSION_REX)
-            versions.last(MAX_VERSIONS).map do |version|
-              dependencies = cache "dependencies-#{version}" do
-                checkout_version(version)
-                sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'}, :fail => :allow)
-              end
-              next unless dependencies # gemspec error
-              {
-                :name => project,
-                :number => version.sub(/^v/, ""),
-                :platform => "ruby",
-                :dependencies => Marshal.load(dependencies)
-              }
-            end.compact
-          end
-        rescue ProjectNotFound
-          []
-        end
+        project_dependencies(user, project)
       end.flatten
     end
 
     private
+
+    def project_dependencies(user, project)
+      inside_of_project(user, project) do
+        versions_for_project.last(MAX_VERSIONS).map do |version|
+          next unless dependencies = dependencies_for_version(project, version)
+          {
+            :name => project,
+            :number => version.sub(/^v/, ""),
+            :platform => "ruby",
+            :dependencies => Marshal.load(dependencies)
+          }
+        end.compact
+      end
+    rescue ProjectNotFound
+      []
+    end
+
+    def versions_for_project
+      sh("git tag").split($/).grep(VERSION_REX)
+    end
+
+    def dependencies_for_version(project, version)
+      cache "dependencies-#{version}" do
+        checkout_version(version)
+        sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{project}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'}, :fail => :allow)
+      end
+    end
 
     def cache(file, value = nil, &block)
       ensure_cache
@@ -94,23 +102,30 @@ module GemOnDemand
 
     def clone_or_refresh_project(user, project)
       if File.directory?(project)
-        if File.exist?("#{project}/not-found")
+        if not_found?(project)
           raise ProjectNotFound
         elsif refresh?(project)
           Dir.chdir(project) { sh "git fetch origin" }
           refreshed!(project)
         end
       else
-        success = sh "git clone git@github.com:#{user}/#{project}.git", :fail => :allow
-        if success
+        found = sh "git clone git@github.com:#{user}/#{project}.git", :fail => :allow
+        if found
           refreshed!(project)
         else
-          # mark it as not found
           Dir.mkdir(project)
-          File.write("#{project}/not-found", "")
+          not_found!(project)
           raise ProjectNotFound
         end
       end
+    end
+
+    def not_found?(project)
+      File.exist?("#{project}/not-found")
+    end
+
+    def not_found!(project)
+      File.write("#{project}/not-found", "")
     end
 
     def refreshed!(project)
