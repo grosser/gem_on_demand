@@ -51,7 +51,6 @@ OPTIONS
 
 TODO
 ====
- - Ctrl+c stops subcommand but not the entire request
  - check how rubygems handles pre-release (x.y.z.PRE)
  - convert to thor + subcommand
 
