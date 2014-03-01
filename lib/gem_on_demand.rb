@@ -62,7 +62,7 @@ module GemOnDemand
     end
 
     def cache(file, value = nil, &block)
-      ensure_cache
+      ensure_dir(CACHE)
       file = "#{CACHE}/#{file}"
       if block
         if File.exist?(file)
@@ -99,15 +99,16 @@ module GemOnDemand
     end
 
     def inside_of_project(user, project, &block)
-      ensure_cache
-      Dir.chdir(CACHE) do
+      dir = "#{CACHE}/#{user}"
+      ensure_dir(dir)
+      Dir.chdir(dir) do
         clone_or_refresh_project(user, project)
         Dir.chdir(project, &block)
       end
     end
 
-    def ensure_cache
-      Dir.mkdir(CACHE) unless File.directory?(CACHE)
+    def ensure_dir(dir)
+      FileUtils.mkdir_p(dir) unless File.directory?(dir)
     end
 
     def clone_or_refresh_project(user, project)

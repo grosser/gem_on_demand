@@ -80,9 +80,9 @@ describe GemOnDemand do
       GemOnDemand.dependencies(*args)
       time { GemOnDemand.dependencies(*args) }.should < 0.01
       time { GemOnDemand.dependencies(*args) }.should < 0.01
-      File.write("cache/statsn/cache/updated_at", Marshal.dump(Time.now.to_i - GemOnDemand::CACHE_DURATION + 2))
+      File.write("cache/grosser/statsn/cache/updated_at", Marshal.dump(Time.now.to_i - GemOnDemand::CACHE_DURATION + 2))
       time { GemOnDemand.dependencies(*args) }.should < 0.01
-      File.write("cache/statsn/cache/updated_at", Marshal.dump(Time.now.to_i - GemOnDemand::CACHE_DURATION - 1))
+      File.write("cache/grosser/statsn/cache/updated_at", Marshal.dump(Time.now.to_i - GemOnDemand::CACHE_DURATION - 1))
       time { GemOnDemand.dependencies(*args) }.should > 0.01
     end
   end
