@@ -41,6 +41,7 @@ OPTIONS
 
 ```
     -s, --server                     Start server
+    -e, --expire                     Expire gem cache for {user}/{project}
     -p, --port PORT                  Port for server (default 7154)
     -h, --help                       Show this.
     -v, --version                    Show Version
@@ -48,7 +49,6 @@ OPTIONS
 
 TODO
 ====
- - `expire user/project` command to clear updated_at + not_found
  - Ctrl+c stops subcommand but not the entire request
  - check how rubygems handles pre-release (x.y.z.PRE)
  - convert to thor + subcommand

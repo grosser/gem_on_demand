@@ -7,7 +7,12 @@ module GemOnDemand
     class << self
       def run(argv)
         options = parse_options(argv)
-        GemOnDemand::Server.run!(options)
+        if expire = options[:expire]
+          GemOnDemand.expire(*expire.split("/"))
+        else
+          GemOnDemand::Server.run!(options)
+        end
+        0
       end
 
       private
@@ -24,6 +29,7 @@ module GemOnDemand
             Options:
           BANNER
           opts.on("-s", "--server", "Start server") { options[:server] = true }
+          opts.on("-e", "--expire NAME", String, "Expire gem cache for {user}/{project}") { |name| options[:expire] = name }
           opts.on("-p", "--port PORT", Integer, "Port for server (default #{GemOnDemand::Server.port})") { |port| options[:port] = port }
           opts.on("-h", "--help", "Show this.") { puts opts; exit }
           opts.on("-v", "--version", "Show Version"){ puts GemOnDemand::VERSION; exit}
@@ -31,7 +37,7 @@ module GemOnDemand
         parser.parse!(argv)
 
         # force server for now ...
-        unless options.delete(:server)
+        if !options.delete(:server) && !options[:expire]
           puts parser
           exit 1
         end

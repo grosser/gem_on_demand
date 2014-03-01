@@ -15,6 +15,12 @@ describe GemOnDemand do
     Benchmark.realtime(&block)
   end
 
+  def write_cache(user, project, file, content)
+    dir = "#{GemOnDemand::PROJECT_CACHE}/#{user}/#{project}/cache"
+    FileUtils.mkdir_p(dir)
+    File.write("#{dir}/#{file}", Marshal.dump(content))
+  end
+
   describe ".build_gem" do
     it "can build gem" do
       gem = GemOnDemand.build_gem("grosser", "parallel", "0.9.2")
@@ -80,10 +86,30 @@ describe GemOnDemand do
       GemOnDemand.dependencies(*args)
       time { GemOnDemand.dependencies(*args) }.should < 0.01
       time { GemOnDemand.dependencies(*args) }.should < 0.01
-      File.write("cache/grosser/statsn/cache/updated_at", Marshal.dump(Time.now.to_i - GemOnDemand::CACHE_DURATION + 2))
+      write_cache "grosser", "statsn", "updated_at", Time.now.to_i - GemOnDemand::CACHE_DURATION + 2
       time { GemOnDemand.dependencies(*args) }.should < 0.01
-      File.write("cache/grosser/statsn/cache/updated_at", Marshal.dump(Time.now.to_i - GemOnDemand::CACHE_DURATION - 1))
+      write_cache "grosser", "statsn", "updated_at", Time.now.to_i - GemOnDemand::CACHE_DURATION - 1
       time { GemOnDemand.dependencies(*args) }.should > 0.01
+    end
+  end
+
+  describe ".expire" do
+    it "removes dependencies cache" do
+      args = ["grosser", ["statsn"]]
+      GemOnDemand.dependencies(*args)
+      GemOnDemand.expire("grosser", "statsn")
+      time { GemOnDemand.dependencies(*args) }.should > 0.01
+    end
+
+    it "removes unfound" do
+      args = ["grosser", ["missing"]]
+      GemOnDemand.dependencies(*args)
+      GemOnDemand.expire("grosser", "missing")
+      time { GemOnDemand.dependencies(*args) }.should > 0.01
+    end
+
+    it "does not fail when removing non-existent" do
+      GemOnDemand.expire("sdfsdffd", "dsfs")
     end
   end
 end

@@ -31,6 +31,10 @@ module GemOnDemand
       end.flatten
     end
 
+    def expire(user, project)
+      remove_directory "#{PROJECT_CACHE}/#{user}/#{project}/#{DATA_CACHE}"
+    end
+
     private
 
     def project_dependencies(user, project)
@@ -63,7 +67,7 @@ module GemOnDemand
     end
 
     def cache(file, value = nil, &block)
-      ensure_dir(DATA_CACHE)
+      ensure_directory(DATA_CACHE)
       file = "#{DATA_CACHE}/#{file}"
       if block
         if File.exist?(file)
@@ -82,7 +86,7 @@ module GemOnDemand
       end
     end
 
-    def expire(key)
+    def expire_key(key)
       key = "#{DATA_CACHE}/#{key}"
       File.unlink(key) if File.exist?(key)
     end
@@ -101,46 +105,51 @@ module GemOnDemand
 
     def inside_of_project(user, project, &block)
       dir = "#{PROJECT_CACHE}/#{user}"
-      ensure_dir(dir)
+      ensure_directory(dir)
       Dir.chdir(dir) do
         clone_or_refresh_project(user, project)
         Dir.chdir(project, &block)
       end
     end
 
-    def ensure_dir(dir)
+    def ensure_directory(dir)
       FileUtils.mkdir_p(dir) unless File.directory?(dir)
     end
 
     def clone_or_refresh_project(user, project)
-      if File.directory?(project)
-        if not_found?(project)
-          raise ProjectNotFound
-        elsif refresh?(project)
+      if File.directory?("#{project}/.git")
+        if refresh?(project)
           Dir.chdir(project) do
             sh "git fetch origin"
-            expire DEPENDENCIES
+            expire_key DEPENDENCIES
           end
           refreshed!(project)
         end
+      elsif not_found?(project)
+        raise ProjectNotFound
       else
+        remove_directory(project)
         found = sh "git clone git@github.com:#{user}/#{project}.git", :fail => :allow
         if found
           refreshed!(project)
         else
-          Dir.mkdir(project)
           not_found!(project)
           raise ProjectNotFound
         end
       end
     end
 
+    def remove_directory(project)
+      FileUtils.rm_rf(project) if File.exist?(project)
+    end
+
     def not_found?(project)
-      File.exist?("#{project}/#{NOT_FOUND}")
+      File.directory?(project) && Dir.chdir(project) { cache(NOT_FOUND) }
     end
 
     def not_found!(project)
-      File.write("#{project}/#{NOT_FOUND}", "")
+      ensure_directory(project)
+      Dir.chdir(project) { cache(NOT_FOUND, true) }
     end
 
     def refreshed!(project)

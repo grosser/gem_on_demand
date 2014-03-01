@@ -51,4 +51,12 @@ describe "GemOnDemand::CLI" do
       {:name=>"statsn", :number=>"0.1.1", :platform=>"ruby", :dependencies=>[["newrelic_rpm", "~> 3.5"]]}
     ]
   end
+
+  it "can expire a cache" do
+    GemOnDemand.dependencies("grosser", ["statsn"])
+    cache = "#{GemOnDemand::PROJECT_CACHE}/grosser/statsn/cache/dependencies"
+    File.exist?(cache).should == true
+    gem_on_demand("--expire grosser/statsn")
+    File.exist?(cache).should == false
+  end
 end
