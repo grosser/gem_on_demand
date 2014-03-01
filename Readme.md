@@ -7,9 +7,8 @@ Install
 =======
 
 ```Bash
-git clone git@github.com:grosser/gem_on_demand.git
-cd gem_on_demand
-ruby app.rb
+gem install gem_on_demand
+gem-on-demand --server
 ```
 
 Usage
@@ -29,13 +28,29 @@ mkdir -p vendor/cache
 bundle
 ```
 
+TIPS
+====
+ - first bundle might fail because it just takes to long, just keep trying until everything is cached
+ - cache is in `~/.gem_on_demand/cache/{user}/{project}` in case you need to clean out some mistakes
+ - only the most recent 50 versions are fetched to be efficient
+ - cache is updated every 15 minutes to look for new tags, so be patient
+
+OPTIONS
+=======
+
+```
+    -s, --server                     Start server
+    -h, --help                       Show this.
+    -v, --version                    Show Version
+```
+
 TODO
 ====
+ - port `g=7` + `o=15` + `d=4` = 7154
+ - `expire user/project` command to clear updated_at + not_found
  - Ctrl+c stops subcommand but not the entire request
- - do not do the git tag + version dance when all tags where cached last time around ...
- - travis
  - check how rubygems handles pre-release (x.y.z.PRE)
- - fake x.y.z-xxx as x.y.z.xxx -> can use these weird tags
+ - convert to thor + subcommand
 
 Author
 ======

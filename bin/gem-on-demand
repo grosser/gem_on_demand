@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+$LOAD_PATH << File.expand_path("../../lib", __FILE__)
+require "gem_on_demand/cli"
+exit GemOnDemand::CLI.run(ARGV)

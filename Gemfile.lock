@@ -1,3 +1,9 @@
+PATH
+  remote: .
+  specs:
+    gem_on_demand (1.0.0)
+      sinatra
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -24,6 +30,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  gem_on_demand!
   rake
   rspec
-  sinatra
