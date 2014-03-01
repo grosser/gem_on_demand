@@ -50,6 +50,38 @@ OPTIONS
     -v, --version                    Show Version
 ```
 
+Boxen + passenger
+=================
+
+Run it in the background!
+
+```Puppet
+# modules/projects/manifests/gem_on_demand.pp
+class projects::gem_on_demand {
+  require team::dependency::config
+
+  $dir = "${somewhere}/gem_on_demand"
+  $ruby = $team::dependency::config::ruby_version
+
+  boxen::project { 'gem_on_demand':
+    ruby    => $ruby,
+    source  => 'git@github.com:grosser/gem_on_demand.git',
+    dir     => $dir,
+    nginx   => "projects/gem_on_demand.conf.erb",
+  }
+}
+```
+
+```Nginx
+# modules/projects/templates/gem_on_demand.conf.erb
+server {
+  listen 7154;
+  root <%= @dir %>/public;
+  passenger_ruby <%= scope.lookupvar "ruby::params::rbenv_root" %>/versions/<%= @ruby %>/bin/ruby;
+  passenger_enabled on;
+}
+```
+
 TODO
 ====
  - check how rubygems handles pre-release (x.y.z.PRE)
