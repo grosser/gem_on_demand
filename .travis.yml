@@ -1,4 +1,5 @@
 language: ruby
+before_script: 'echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config'
 bundler_args: ""
 rvm:
   - 2.0.0
