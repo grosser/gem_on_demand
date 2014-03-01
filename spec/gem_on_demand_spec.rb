@@ -11,6 +11,10 @@ describe GemOnDemand do
     end
   end
 
+  def time(&block)
+    Benchmark.realtime(&block)
+  end
+
   describe ".build_gem" do
     it "can build gem" do
       gem = GemOnDemand.build_gem("grosser", "parallel", "0.9.2")
@@ -23,9 +27,9 @@ describe GemOnDemand do
     end
 
     it "is fast when cached" do
-      GemOnDemand.build_gem("grosser", "parallel", "0.9.2")
-      t = Benchmark.realtime { GemOnDemand.build_gem("grosser", "parallel", "0.9.2") }
-      t.should < 0.01
+      args = ["grosser", "parallel", "0.9.2"]
+      GemOnDemand.build_gem(*args)
+      time { GemOnDemand.build_gem(*args) }.should < 0.01
     end
   end
 
@@ -61,15 +65,25 @@ describe GemOnDemand do
     end
 
     it "remembers unfound gems" do
-      dependencies = GemOnDemand.dependencies("grosser", ["does_not_exist"])
-      dependencies.should == []
-      t = Benchmark.realtime { GemOnDemand.dependencies("grosser", ["does_not_exist"]) }
-      t.should < 0.001
+      args = ["grosser", ["does_not_exist"]]
+      GemOnDemand.dependencies(*args).should == []
+      time { GemOnDemand.dependencies(*args) }.should < 0.001
     end
 
     it "does not know rails, because it's a giant repo with tons of forks" do
       dependencies = GemOnDemand.dependencies("grosser", ["rails"])
       dependencies.should == []
+    end
+
+    it "is cached until new tags are fetched" do
+      args = ["grosser", ["statsn"]]
+      GemOnDemand.dependencies(*args)
+      time { GemOnDemand.dependencies(*args) }.should < 0.01
+      time { GemOnDemand.dependencies(*args) }.should < 0.01
+      File.write("cache/statsn/cache/updated_at", Marshal.dump(Time.now.to_i - GemOnDemand::CACHE_DURATION + 2))
+      time { GemOnDemand.dependencies(*args) }.should < 0.01
+      File.write("cache/statsn/cache/updated_at", Marshal.dump(Time.now.to_i - GemOnDemand::CACHE_DURATION - 1))
+      time { GemOnDemand.dependencies(*args) }.should > 0.01
     end
   end
 end

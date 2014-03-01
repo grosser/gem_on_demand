@@ -7,6 +7,9 @@ module GemOnDemand
   VERSION_REX = /^v?\d+\.\d+\.\d+(\.\w+)?$/ # with or without v and pre-release (cannot do others or we get: 'Malformed version number string 1.0.0-rails3' from bundler)
   HEAVY_FORKED = ["rails", "mysql", "mysql2"]
   MAX_VERSIONS = 50 # some projects just have a million versions ...
+  DEPENDENCIES = "dependencies"
+  NOT_FOUND = "not-found"
+  UPDATED_AT = "updated_at"
 
   class << self
     def build_gem(user, project, version)
@@ -31,15 +34,17 @@ module GemOnDemand
 
     def project_dependencies(user, project)
       inside_of_project(user, project) do
-        versions_for_project.last(MAX_VERSIONS).map do |version|
-          next unless dependencies = dependencies_for_version(project, version)
-          {
-            :name => project,
-            :number => version.sub(/^v/, ""),
-            :platform => "ruby",
-            :dependencies => Marshal.load(dependencies)
-          }
-        end.compact
+        cache DEPENDENCIES do
+          versions_for_project.last(MAX_VERSIONS).map do |version|
+            next unless dependencies = dependencies_for_version(project, version)
+            {
+              :name => project,
+              :number => version.sub(/^v/, ""),
+              :platform => "ruby",
+              :dependencies => Marshal.load(dependencies)
+            }
+          end.compact
+        end
       end
     rescue ProjectNotFound
       []
@@ -76,6 +81,11 @@ module GemOnDemand
       end
     end
 
+    def expire(key)
+      key = "#{CACHE}/#{key}"
+      File.unlink(key) if File.exist?(key)
+    end
+
     def sh(command, options = { })
       puts command
       result = `#{command}`
@@ -105,7 +115,10 @@ module GemOnDemand
         if not_found?(project)
           raise ProjectNotFound
         elsif refresh?(project)
-          Dir.chdir(project) { sh "git fetch origin" }
+          Dir.chdir(project) do
+            sh "git fetch origin"
+            expire DEPENDENCIES
+          end
           refreshed!(project)
         end
       else
@@ -121,19 +134,19 @@ module GemOnDemand
     end
 
     def not_found?(project)
-      File.exist?("#{project}/not-found")
+      File.exist?("#{project}/#{NOT_FOUND}")
     end
 
     def not_found!(project)
-      File.write("#{project}/not-found", "")
+      File.write("#{project}/#{NOT_FOUND}", "")
     end
 
     def refreshed!(project)
-      Dir.chdir(project) { cache("updated_at", Time.now.to_i) }
+      Dir.chdir(project) { cache(UPDATED_AT, Time.now.to_i) }
     end
 
     def refresh?(project)
-      Dir.chdir(project) { cache("updated_at").to_i } < Time.now.to_i - CACHE_DURATION
+      Dir.chdir(project) { cache(UPDATED_AT).to_i } < Time.now.to_i - CACHE_DURATION
     end
 
     def checkout_version(version)
