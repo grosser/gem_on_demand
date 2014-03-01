@@ -1,7 +1,8 @@
 require 'tmpdir'
 
 module GemOnDemand
-  CACHE = "cache"
+  PROJECT_CACHE = File.expand_path("~/.gem-on-demand/cache")
+  DATA_CACHE = "cache"
   CACHE_DURATION = 15 * 60 # for project tags
   ProjectNotFound = Class.new(Exception)
   VERSION_REX = /^v?\d+\.\d+\.\d+(\.\w+)?$/ # with or without v and pre-release (cannot do others or we get: 'Malformed version number string 1.0.0-rails3' from bundler)
@@ -62,8 +63,8 @@ module GemOnDemand
     end
 
     def cache(file, value = nil, &block)
-      ensure_dir(CACHE)
-      file = "#{CACHE}/#{file}"
+      ensure_dir(DATA_CACHE)
+      file = "#{DATA_CACHE}/#{file}"
       if block
         if File.exist?(file)
           Marshal.load(File.read(file))
@@ -82,7 +83,7 @@ module GemOnDemand
     end
 
     def expire(key)
-      key = "#{CACHE}/#{key}"
+      key = "#{DATA_CACHE}/#{key}"
       File.unlink(key) if File.exist?(key)
     end
 
@@ -99,7 +100,7 @@ module GemOnDemand
     end
 
     def inside_of_project(user, project, &block)
-      dir = "#{CACHE}/#{user}"
+      dir = "#{PROJECT_CACHE}/#{user}"
       ensure_dir(dir)
       Dir.chdir(dir) do
         clone_or_refresh_project(user, project)

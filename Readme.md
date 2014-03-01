@@ -31,7 +31,7 @@ bundle
 TIPS
 ====
  - first bundle might fail because it just takes to long, just keep trying until everything is cached
- - cache is in `~/.gem_on_demand/cache/{user}/{project}` in case you need to clean out some mistakes
+ - cache is in `~/.gem-on-demand/cache/{user}/{project}` in case you need to clean out some mistakes
  - only the most recent 50 versions are fetched to be efficient
  - cache is updated every 15 minutes to look for new tags, so be patient
  - port is `g=7` + `o=15` + `d=4` = 7154
