@@ -3,6 +3,7 @@ require 'gem_on_demand'
 
 module GemOnDemand
   class Server < Sinatra::Base
+    set :port, 7154
     set :lock, true # multi threading is not supported when doing chdir foo
 
     get '/:username/api/v1/dependencies' do

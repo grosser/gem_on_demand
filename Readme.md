@@ -34,19 +34,20 @@ TIPS
  - cache is in `~/.gem_on_demand/cache/{user}/{project}` in case you need to clean out some mistakes
  - only the most recent 50 versions are fetched to be efficient
  - cache is updated every 15 minutes to look for new tags, so be patient
+ - port is `g=7` + `o=15` + `d=4` = 7154
 
 OPTIONS
 =======
 
 ```
     -s, --server                     Start server
+    -p, --port PORT                  Port for server (default 7154)
     -h, --help                       Show this.
     -v, --version                    Show Version
 ```
 
 TODO
 ====
- - port `g=7` + `o=15` + `d=4` = 7154
  - `expire user/project` command to clear updated_at + not_found
  - Ctrl+c stops subcommand but not the entire request
  - check how rubygems handles pre-release (x.y.z.PRE)

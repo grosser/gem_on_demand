@@ -44,7 +44,7 @@ describe "GemOnDemand::CLI" do
   it "can boot a server" do
     Thread.new { gem_on_demand("--server") }
     sleep 3 # let server boot
-    result = `curl --silent localhost:4567/grosser/api/v1/dependencies?gems=statsn`
+    result = `curl --silent localhost:7154/grosser/api/v1/dependencies?gems=statsn`
     kill_all_children
     Marshal.load(result).should == [
       {:name=>"statsn", :number=>"0.1.0", :platform=>"ruby", :dependencies=>[["newrelic_rpm", "~> 3.5"]]},
