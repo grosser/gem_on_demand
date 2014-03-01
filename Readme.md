@@ -16,7 +16,8 @@ Usage
 Specify a source with username in your gemfile
 
 ```Ruby
-source "http://localhost:4567/grosser"
+# source "https://rubygems.org" # need normal gems too ?
+source "http://localhost:7154/grosser"
 
 gem "parallel"
 gem "bump"
