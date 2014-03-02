@@ -1,5 +1,6 @@
 require 'tmpdir'
 require 'gem_on_demand/project'
+require 'gem_on_demand/utils'
 
 module GemOnDemand
   HEAVY_FORKED = ["rails", "mysql", "mysql2"]
