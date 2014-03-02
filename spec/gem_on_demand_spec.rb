@@ -15,7 +15,7 @@ describe GemOnDemand do
     Benchmark.realtime(&block)
   end
 
-  def write_cache(user, project, file, content)
+  def write_cache((user, project, file), content)
     dir = "#{GemOnDemand::Checkout::DIR}/#{user}/#{project}/cache"
     FileUtils.mkdir_p(dir)
     File.write("#{dir}/#{file}", Marshal.dump(content))
@@ -83,12 +83,13 @@ describe GemOnDemand do
 
     it "is cached until new tags are fetched" do
       args = ["grosser", ["statsn"]]
+      updated_at = ["grosser", "statsn", GemOnDemand::Checkout::UPDATED_AT]
       GemOnDemand.dependencies(*args)
       time { GemOnDemand.dependencies(*args) }.should < 0.01
       time { GemOnDemand.dependencies(*args) }.should < 0.01
-      write_cache "grosser", "statsn", "updated_at", Time.now.to_i - GemOnDemand::Checkout::CACHE_DURATION + 2
+      write_cache updated_at, Time.now.to_i - GemOnDemand::Checkout::CACHE_DURATION + 2
       time { GemOnDemand.dependencies(*args) }.should < 0.01
-      write_cache "grosser", "statsn", "updated_at", Time.now.to_i - GemOnDemand::Checkout::CACHE_DURATION - 1
+      write_cache updated_at, Time.now.to_i - GemOnDemand::Checkout::CACHE_DURATION - 1
       time { GemOnDemand.dependencies(*args) }.should > 0.01
     end
   end

@@ -1,5 +1,6 @@
 module GemOnDemand
   class Checkout
+    NotFound = Class.new(Exception)
     NOT_FOUND = "not-found"
     UPDATED_AT = "updated_at"
     DIR = File.expand_path("~/.gem-on-demand/cache")
@@ -10,59 +11,70 @@ module GemOnDemand
     def initialize(user, project)
       self.user = user
       self.project = project
+      Utils.ensure_directory(dir)
     end
 
     def inside(&block)
-      dir = "#{DIR}/#{user}"
-      Utils.ensure_directory(dir)
-      Dir.chdir(dir) do
-        clone_or_refresh
-        Dir.chdir(project.name, &block)
-      end
+      clone_or_refresh
+      Dir.chdir(dir, &block)
+    end
+
+    def cache
+      @cache ||= FileCache.new("#{dir}/cache")
     end
 
     private
 
+    def dir
+      "#{DIR}/#{user}/#{project}"
+    end
+
     def not_found?
-      File.directory?(project.name) && Dir.chdir(project.name) { project.cache(NOT_FOUND) }
+      cache && cache.cache(NOT_FOUND)
     end
 
     def not_found!
-      Utils.ensure_directory(project.name)
-      Dir.chdir(project.name) { project.cache(NOT_FOUND, true) }
+      cache.cache(NOT_FOUND, true)
+      raise NotFound
     end
 
-    def refreshed!
-      Dir.chdir(project.name) do
-        project.cache(UPDATED_AT, Time.now.to_i)
-      end
+    def need_refresh?
+      cache && cache.cache(UPDATED_AT).to_i < Time.now.to_i - CACHE_DURATION
     end
 
-    def refresh?
-      Dir.chdir(project.name) { project.cache(UPDATED_AT).to_i } < Time.now.to_i - CACHE_DURATION
+    def fresh!
+      cache.cache(UPDATED_AT, Time.now.to_i)
     end
 
     def clone_or_refresh
-      if File.directory?("#{project.name}/.git")
-        if refresh?
-          Dir.chdir(project.name) do
-            Utils.sh "git fetch origin"
-            project.expire_key Project::DEPENDENCIES
-          end
-          refreshed!
-        end
+      if cloned?
+        refresh if need_refresh?
       elsif not_found?
-        raise Project::NotFound
+        not_found!
       else
-        Utils.remove_directory(project.name)
-        found = Utils.sh "git clone git@github.com:#{user}/#{project.name}.git", :fail => :allow
-        if found
-          refreshed!
-        else
-          not_found!
-          raise Project::NotFound
-        end
+        clone
       end
+    end
+
+    def refresh
+      Dir.chdir(dir) { Utils.sh "git fetch origin" }
+      cache.expire Project::DEPENDENCIES
+      fresh!
+    end
+
+    def clone
+      Utils.remove_directory(dir)
+      cloned = Utils.sh "git clone git@github.com:#{user}/#{project}.git", :fail => :allow
+      Utils.ensure_directory(dir)
+      if cloned
+        fresh!
+      else
+        not_found!
+      end
+    end
+
+    def cloned?
+      File.directory?("#{dir}/.git")
     end
   end
 end
