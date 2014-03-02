@@ -84,6 +84,7 @@ server {
 
 TODO
 ====
+ - Project methods use 2 different levels of abstraction .. maybe split ...
  - check how rubygems handles pre-release (x.y.z.PRE)
  - convert to thor + subcommand
 
