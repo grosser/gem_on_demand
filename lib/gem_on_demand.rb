@@ -32,7 +32,13 @@ module GemOnDemand
     end
 
     def expire(user, project)
-      remove_directory "#{PROJECT_CACHE}/#{user}/#{project}/#{DATA_CACHE}"
+      project = "#{PROJECT_CACHE}/#{user}/#{project}"
+      return unless File.directory?(project)
+      Dir.chdir project do
+        expire_key UPDATED_AT
+        expire_key NOT_FOUND
+        expire_key DEPENDENCIES
+      end
     end
 
     private
