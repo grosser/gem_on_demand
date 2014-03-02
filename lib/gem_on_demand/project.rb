@@ -2,11 +2,7 @@ module GemOnDemand
   class Project
     MAX_VERSIONS = 50 # some projects just have a million versions ...
     DEPENDENCIES = "dependencies"
-    NOT_FOUND = "not-found"
-    UPDATED_AT = "updated_at"
-    CHECKOUT_DIR = File.expand_path("~/.gem-on-demand/cache")
     DATA_CACHE = "cache"
-    CACHE_DURATION = 15 * 60 # for project tags
     NotFound = Class.new(Exception)
     VERSION_REX = /^v?\d+\.\d+\.\d+(\.\w+)?$/ # with or without v and pre-release (cannot do others or we get: 'Malformed version number string 1.0.0-rails3' from bundler)
 
@@ -18,7 +14,7 @@ module GemOnDemand
     end
 
     def dependencies
-      inside_checkout do
+      checkout.inside do
         cache DEPENDENCIES do
           versions.last(MAX_VERSIONS).map do |version|
             next unless dependencies = dependencies_for_version(version)
@@ -36,7 +32,7 @@ module GemOnDemand
     end
 
     def build_gem(version)
-      inside_checkout do
+      checkout.inside do
         cache("gem-#{version}") do
           checkout_version("v#{version}")
           gemspec = "#{name}.gemspec"
@@ -48,35 +44,18 @@ module GemOnDemand
     end
 
     def expire
-      dir = "#{CHECKOUT_DIR}/#{user}/#{name}"
+      dir = "#{Checkout::DIR}/#{user}/#{name}"
       return unless File.directory?(dir)
       Dir.chdir dir do
-        expire_key UPDATED_AT
-        expire_key NOT_FOUND
+        expire_key Checkout::UPDATED_AT
+        expire_key Checkout::NOT_FOUND
         expire_key DEPENDENCIES
       end
     end
 
-    private
-
-    def dependencies_for_version(version)
-      cache "dependencies-#{version}" do
-        checkout_version(version)
-        Utils.sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{name}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'}, :fail => :allow)
-      end
-    end
-
-    def versions
-      Utils.sh("git tag").split($/).grep(VERSION_REX)
-    end
-
-    def inside_checkout(&block)
-      dir = "#{CHECKOUT_DIR}/#{user}"
-      Utils.ensure_directory(dir)
-      Dir.chdir(dir) do
-        clone_or_refresh
-        Dir.chdir(name, &block)
-      end
+    def expire_key(key)
+      key = "#{DATA_CACHE}/#{key}"
+      File.unlink(key) if File.exist?(key)
     end
 
     def cache(file, value = nil, &block)
@@ -99,58 +78,25 @@ module GemOnDemand
       end
     end
 
-    def expire_key(key)
-      key = "#{DATA_CACHE}/#{key}"
-      File.unlink(key) if File.exist?(key)
+    private
+
+    def checkout
+      @checkout ||= Checkout.new(user, self)
     end
 
-    # on user folder level
-    def not_found?
-      File.directory?(name) && Dir.chdir(name) { cache(NOT_FOUND) }
-    end
-
-    # on user folder level
-    def not_found!
-      Utils.ensure_directory(name)
-      Dir.chdir(name) { cache(NOT_FOUND, true) }
-    end
-
-    # on user folder level
-    def refreshed!
-      Dir.chdir(name) { cache(UPDATED_AT, Time.now.to_i) }
-    end
-
-    # on user folder level
-    def refresh?
-      Dir.chdir(name) { cache(UPDATED_AT).to_i } < Time.now.to_i - CACHE_DURATION
-    end
-
-    # on user folder level
-    def clone_or_refresh
-      if File.directory?("#{name}/.git")
-        if refresh?
-          Dir.chdir(name) do
-            Utils.sh "git fetch origin"
-            expire_key DEPENDENCIES
-          end
-          refreshed!
-        end
-      elsif not_found?
-        raise NotFound
-      else
-        Utils.remove_directory(name)
-        found = Utils.sh "git clone git@github.com:#{user}/#{name}.git", :fail => :allow
-        if found
-          refreshed!
-        else
-          not_found!
-          raise NotFound
-        end
+    def dependencies_for_version(version)
+      cache "dependencies-#{version}" do
+        checkout_version(version)
+        Utils.sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{name}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'}, :fail => :allow)
       end
     end
 
     def checkout_version(version)
       Utils.sh("git checkout #{version} --force")
+    end
+
+    def versions
+      Utils.sh("git tag").split($/).grep(VERSION_REX)
     end
   end
 end

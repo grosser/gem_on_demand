@@ -1,4 +1,5 @@
 require 'tmpdir'
+require 'gem_on_demand/checkout'
 require 'gem_on_demand/project'
 require 'gem_on_demand/utils'
 

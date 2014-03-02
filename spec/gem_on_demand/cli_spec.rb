@@ -54,7 +54,7 @@ describe "GemOnDemand::CLI" do
 
   it "can expire a cache" do
     GemOnDemand.dependencies("grosser", ["statsn"])
-    cache = "#{GemOnDemand::Project::CHECKOUT_DIR}/grosser/statsn/cache/dependencies"
+    cache = "#{GemOnDemand::Checkout::DIR}/grosser/statsn/cache/dependencies"
     File.exist?(cache).should == true
     gem_on_demand("--expire grosser/statsn")
     File.exist?(cache).should == false
