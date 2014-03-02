@@ -29,7 +29,7 @@ module GemOnDemand
       "#{DIR}/#{user}/#{project}"
     end
 
-    def not_found?
+    def was_not_found?
       cache.read(NOT_FOUND)
     end
 
@@ -39,7 +39,7 @@ module GemOnDemand
     end
 
     def need_refresh?
-      cache && cache.read(UPDATED_AT).to_i < Time.now.to_i - CACHE_DURATION
+      cache.read(UPDATED_AT).to_i < Time.now.to_i - CACHE_DURATION
     end
 
     def fresh!
@@ -49,7 +49,7 @@ module GemOnDemand
     def clone_or_refresh
       if cloned?
         refresh if need_refresh?
-      elsif not_found?
+      elsif was_not_found?
         not_found!
       else
         clone

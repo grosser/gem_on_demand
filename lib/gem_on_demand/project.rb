@@ -20,7 +20,7 @@ module GemOnDemand
             :name => name,
             :number => version.sub(/^v/, ""),
             :platform => "ruby",
-            :dependencies => Marshal.load(dependencies)
+            :dependencies => dependencies
           }
         end.compact
       end
@@ -41,7 +41,8 @@ module GemOnDemand
     def dependencies_for_version(version)
       cache.fetch "dependencies-#{version}" do
         checkout_version(version)
-        Utils.sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{name}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'}, :fail => :allow)
+        result = Utils.sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{name}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'}, :fail => :allow)
+        Marshal.load(result) if result
       end
     end
 
