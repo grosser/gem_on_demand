@@ -30,20 +30,20 @@ module GemOnDemand
     end
 
     def not_found?
-      cache && cache.cache(NOT_FOUND)
+      cache.read(NOT_FOUND)
     end
 
     def not_found!
-      cache.cache(NOT_FOUND, true)
+      cache.write(NOT_FOUND, true)
       raise NotFound
     end
 
     def need_refresh?
-      cache && cache.cache(UPDATED_AT).to_i < Time.now.to_i - CACHE_DURATION
+      cache && cache.read(UPDATED_AT).to_i < Time.now.to_i - CACHE_DURATION
     end
 
     def fresh!
-      cache.cache(UPDATED_AT, Time.now.to_i)
+      cache.write(UPDATED_AT, Time.now.to_i)
     end
 
     def clone_or_refresh
@@ -58,13 +58,13 @@ module GemOnDemand
 
     def refresh
       Dir.chdir(dir) { Utils.sh "git fetch origin" }
-      cache.expire Project::DEPENDENCIES
+      cache.delete Project::DEPENDENCIES
       fresh!
     end
 
     def clone
       Utils.remove_directory(dir)
-      cloned = Utils.sh "git clone git@github.com:#{user}/#{project}.git", :fail => :allow
+      cloned = Utils.sh "git clone git@github.com:#{user}/#{project}.git #{dir}", :fail => :allow
       Utils.ensure_directory(dir)
       if cloned
         fresh!

@@ -13,7 +13,7 @@ module GemOnDemand
     end
 
     def dependencies
-      cache.cache DEPENDENCIES do
+      cache.fetch DEPENDENCIES do
         versions.last(MAX_VERSIONS).map do |version|
           next unless dependencies = dependencies_for_version(version)
           {
@@ -27,7 +27,7 @@ module GemOnDemand
     end
 
     def build_gem(version)
-      cache.cache("gem-#{version}") do
+      cache.fetch("gem-#{version}") do
         checkout_version("v#{version}")
         gemspec = "#{name}.gemspec"
         Utils.remove_signing(gemspec)
@@ -39,7 +39,7 @@ module GemOnDemand
     private
 
     def dependencies_for_version(version)
-      cache.cache "dependencies-#{version}" do
+      cache.fetch "dependencies-#{version}" do
         checkout_version(version)
         Utils.sh(%{ruby -e 'print Marshal.dump(eval(File.read("#{name}.gemspec")).runtime_dependencies.map{|d| [d.name, d.requirement.to_s]})'}, :fail => :allow)
       end

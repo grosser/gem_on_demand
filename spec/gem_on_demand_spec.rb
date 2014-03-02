@@ -73,7 +73,7 @@ describe GemOnDemand do
     it "remembers unfound gems" do
       args = ["grosser", ["does_not_exist"]]
       GemOnDemand.dependencies(*args).should == []
-      time { GemOnDemand.dependencies(*args) }.should < 0.001
+      time { GemOnDemand.dependencies(*args) }.should < 0.01
     end
 
     it "does not know rails, because it's a giant repo with tons of forks" do

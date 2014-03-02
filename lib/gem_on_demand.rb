@@ -36,7 +36,7 @@ module GemOnDemand
         Checkout::NOT_FOUND,
         Project::DEPENDENCIES
       ].each do |key|
-        checkout.cache.expire key
+        checkout.cache.delete key
       end
     end
   end
