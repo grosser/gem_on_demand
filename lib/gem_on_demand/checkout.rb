@@ -14,7 +14,7 @@ module GemOnDemand
       Utils.ensure_directory(dir)
     end
 
-    def inside(&block)
+    def chdir(&block)
       clone_or_refresh
       Dir.chdir(dir, &block)
     end

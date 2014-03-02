@@ -10,7 +10,7 @@ module GemOnDemand
   class << self
     def build_gem(user, project, version)
       checkout = Checkout.new(user, project)
-      checkout.inside do
+      checkout.chdir do
         Project.new(user, project, checkout.cache).build_gem(version)
       end
     end
@@ -19,7 +19,7 @@ module GemOnDemand
       (gems - HEAVY_FORKED).map do |project|
         checkout = Checkout.new(user, project)
         begin
-          checkout.inside do
+          checkout.chdir do
             Project.new(user, project, checkout.cache).dependencies
           end
         rescue Checkout::NotFound
